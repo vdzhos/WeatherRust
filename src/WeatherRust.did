@@ -1,0 +1,3 @@
+service : {
+  "weather_endpoint": (record { token: text; requester_name: text; location: text; date: text }) -> (text);
+}

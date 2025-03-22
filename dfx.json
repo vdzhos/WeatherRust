@@ -1,0 +1,16 @@
+{
+  "canisters": {
+    "WeatherRust": {
+      "type": "rust",
+      "package": "WeatherRust",
+      "candid": "src/WeatherRust.did",
+      "wasm": "target/wasm32-unknown-unknown/release/WeatherRust.wasm"
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:8000"
+    }
+  },
+  "version": 1
+}
