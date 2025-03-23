@@ -87,6 +87,12 @@ pub struct WindInfoResponse {
     wind_power: String,
 }
 
+#[derive(Debug, Serialize)]
+pub struct UvRecommendation {
+    sunglasses_recommendation: String,
+    uvindex: f64,
+}
+
 //-----end structs-----
 
 const API_TOKEN: &str = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
@@ -358,5 +364,59 @@ fn get_wind_power_category(speed_kph: f64) -> String {
         s if s < 29.0 => "Medium wind",
         s if s < 75.0 => "Strong wind",
         _ => "Hurricane wind",
+    }.to_string()
+}
+
+//----------uv recommendation------------
+
+#[update]
+async fn get_uv_recommendation_endpoint(request: WeatherRequest) -> String {
+    if request.token != API_TOKEN {
+        return "Invalid API token.".to_string();
+    }
+
+    match get_uv_recommendation(&request.location, &request.date).await {
+        Ok(response) => serde_json::to_string(&response).unwrap(),
+        Err(e) => format!("Error fetching wind info: {}", e),
+    }
+}
+
+async fn get_uv_recommendation(location: &str, date: &str) -> Result<UvRecommendation, String> {
+    let url = format!(
+        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}",
+        WEATHER_API_HOST, location, date, WEATHER_API_KEY
+    );
+
+    let request = build_http_request(url);
+
+    match http_request(request).await {
+        Ok((response,)) if response.status == 200 => {
+            let str_body = String::from_utf8(response.body)
+                .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+            let all_info: Value = serde_json::from_str(&str_body)
+                .map_err(|e| format!("Failed to parse JSON: {}", e))?;
+
+            let uvindex = all_info["days"][0]["uvindex"].as_f64().unwrap_or(0.0);
+
+            let sunglasses_recommendation = get_sunglasses_recommendation(uvindex);
+
+            let result = UvRecommendation {
+                sunglasses_recommendation,
+                uvindex,
+            };
+
+            Ok(result)
+        }
+        Ok((response,)) => Err(format!("Non-200 response: {}", response.status)),
+        Err((code, message)) => Err(format!("Request failed: {:?}, {}", code, message)),
+    }
+}
+
+fn get_sunglasses_recommendation(uvindex: f64) -> String {
+    match uvindex {
+        uv if uv < 3.0 => "Sunglasses are not necessary",
+        uv if uv < 5.0 => "Sunglasses are recommended",
+        _ => "Sunglasses are necessary",
     }.to_string()
 }
