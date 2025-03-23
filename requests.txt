@@ -1,3 +1,6 @@
+------------------------------------------------
+weather_endpoint
+------------------------------------------------
 dfx canister call WeatherRust weather_endpoint '(
     record {
         token = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
@@ -7,7 +10,9 @@ dfx canister call WeatherRust weather_endpoint '(
     }
 )'
 
-
+------------------------------------------------
+average_weather_on_range_endpoint
+------------------------------------------------
 dfx canister call WeatherRust average_weather_on_range_endpoint '(
     record {
         token = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
@@ -15,5 +20,18 @@ dfx canister call WeatherRust average_weather_on_range_endpoint '(
         location = "London";
         start_date = "2025-01-01";
         end_date = "2025-01-07"
+    }
+)'
+
+------------------------------------------------
+compare_weather_endpoint
+------------------------------------------------
+dfx canister call WeatherRust compare_weather_endpoint '(
+    record {
+        token = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
+        requester_name = "Your Name";
+        location1 = "Kyiv";
+        location2 = "London";
+        date = "2023-05-01";
     }
 )'

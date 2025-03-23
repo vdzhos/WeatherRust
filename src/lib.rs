@@ -25,6 +25,15 @@ struct AverageWeatherOnRangeRequest {
 }
 
 #[derive(Serialize, Deserialize, CandidType, Debug)]
+struct CompareWeatherRequest {
+    token: String,
+    requester_name: String,
+    location1: String,
+    location2: String,
+    date: String,
+}
+
+#[derive(Serialize, Deserialize, CandidType, Debug)]
 struct WeatherResponse {
     temp_c: f64,
     wind_kph: f64,
@@ -38,6 +47,18 @@ struct AverageWeatherResponse {
     avg_wind_kph: f64,
     avg_pressure_mb: f64,
     avg_humidity: f64,
+}
+
+#[derive(Serialize, Deserialize, CandidType, Debug)]
+struct LocationWeatherResponse {
+    location_name: String,
+    weather: WeatherResponse,
+}
+
+#[derive(Serialize, Deserialize, CandidType, Debug)]
+struct CompareWeatherResponse {
+    location1: LocationWeatherResponse,
+    location2: LocationWeatherResponse,
 }
 
 const API_TOKEN: &str = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
@@ -160,5 +181,30 @@ async fn get_average_weather_on_range(location: &str, start_date: &str, end_date
         }
         Ok((response,)) => Err(format!("Non-200 response: {}", response.status)),
         Err((code, message)) => Err(format!("Request failed: {:?}, {}", code, message)),
+    }
+}
+
+#[update]
+async fn compare_weather_endpoint(request: CompareWeatherRequest) -> String {
+    if request.token != API_TOKEN {
+        return "Invalid API token.".to_string();
+    }
+
+    let weather1 = get_weather(&request.location1, &request.date).await;
+    let weather2 = get_weather(&request.location2, &request.date).await;
+
+    match (weather1, weather2) {
+        (Ok(w1), Ok(w2)) => serde_json::to_string(&CompareWeatherResponse {
+            location1: LocationWeatherResponse {
+                location_name: request.location1.clone(),
+                weather: w1,
+            },
+            location2: LocationWeatherResponse {
+                location_name: request.location2.clone(),
+                weather: w2,
+            },
+        }).unwrap(),
+        (Err(e1), _) => format!("Error fetching weather data for location1 ({}): {}", request.location1, e1),
+        (_, Err(e2)) => format!("Error fetching weather data for location2 ({}): {}", request.location2, e2),
     }
 }
