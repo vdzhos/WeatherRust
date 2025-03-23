@@ -80,6 +80,30 @@ dfx canister call WeatherRust get_precipitation_info_endpoint '(
         token = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
         requester_name = "illia";
         location = "Kyiv";
-        date = "2025-05-01"
+        date = "2025-01-01"
+    }
+)'
+
+------------------------------------------------
+get_feels_like_temperature_endpoint
+------------------------------------------------
+dfx canister call WeatherRust get_feels_like_temperature_endpoint '(
+    record {
+        token = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
+        requester_name = "illia";
+        location = "Kyiv";
+        date = "2025-01-01"
+    }
+)'
+
+------------------------------------------------
+get_sun_times_endpoint
+------------------------------------------------
+dfx canister call WeatherRust get_sun_times_endpoint '(
+    record {
+        token = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
+        requester_name = "illia";
+        location = "Kyiv";
+        date = "2025-01-01"
     }
 )'

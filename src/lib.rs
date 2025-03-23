@@ -99,6 +99,18 @@ pub struct PrecipitationInfoResponse {
     precipitation_type: String,
 }
 
+#[derive(Debug, Serialize)]
+pub struct FeelsLikeTemperatureResponse {
+    actual_temp_c: f64,
+    feels_like_c: f64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SunTimesResponse {
+    sunrise: String,
+    sunset: String,
+}
+
 //-----end structs-----
 
 const API_TOKEN: &str = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
@@ -466,6 +478,89 @@ async fn get_precipitation_info(location: &str, date: &str) -> Result<Precipitat
             Ok(PrecipitationInfoResponse {
                 precipitation_mm,
                 precipitation_type,
+            })
+        }
+        Ok((response,)) => Err(format!("Non-200 response: {}", response.status)),
+        Err((code, message)) => Err(format!("Request failed: {:?}, {}", code, message)),
+    }
+}
+
+#[update]
+async fn get_feels_like_temperature_endpoint(request: WeatherRequest) -> String {
+    if request.token != API_TOKEN {
+        return "Invalid API token.".to_string();
+    }
+
+    match get_feels_like_temperature(&request.location, &request.date).await {
+        Ok(response) => serde_json::to_string(&response).unwrap(),
+        Err(e) => format!("Error fetching 'feels like' temp: {}", e),
+    }
+}
+
+async fn get_feels_like_temperature(location: &str, date: &str) -> Result<FeelsLikeTemperatureResponse, String> {
+    let url = format!(
+        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}",
+        WEATHER_API_HOST, location, date, WEATHER_API_KEY
+    );
+
+    let request = build_http_request(url);
+
+    match http_request(request).await {
+        Ok((response,)) if response.status == 200 => {
+            let str_body = String::from_utf8(response.body)
+                .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+            let all_info: Value = serde_json::from_str(&str_body)
+                .map_err(|e| format!("Failed to parse JSON: {}", e))?;
+
+            let day = &all_info["days"][0];
+            let actual_temp_c = day["temp"].as_f64().unwrap_or(0.0);
+            let feels_like_c = day["feelslike"].as_f64().unwrap_or(0.0);
+
+            Ok(FeelsLikeTemperatureResponse {
+                actual_temp_c,
+                feels_like_c,
+            })
+        }
+        Ok((response,)) => Err(format!("Non-200 response: {}", response.status)),
+        Err((code, message)) => Err(format!("Request failed: {:?}, {}", code, message)),
+    }
+}
+
+#[update]
+async fn get_sun_times_endpoint(request: WeatherRequest) -> String {
+    if request.token != API_TOKEN {
+        return "Invalid API token.".to_string();
+    }
+
+    match get_sun_times(&request.location, &request.date).await {
+        Ok(response) => serde_json::to_string(&response).unwrap(),
+        Err(e) => format!("Error fetching sun times: {}", e),
+    }
+}
+
+async fn get_sun_times(location: &str, date: &str) -> Result<SunTimesResponse, String> {
+    let url = format!(
+        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}",
+        WEATHER_API_HOST, location, date, WEATHER_API_KEY
+    );
+
+    let request = build_http_request(url);
+
+    match http_request(request).await {
+        Ok((response,)) if response.status == 200 => {
+            let str_body = String::from_utf8(response.body)
+                .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+            let all_info: Value = serde_json::from_str(&str_body)
+                .map_err(|e| format!("Failed to parse JSON: {}", e))?;
+
+            let sunrise = all_info["days"][0]["sunrise"].as_str().unwrap_or("unknown").to_string();
+            let sunset = all_info["days"][0]["sunset"].as_str().unwrap_or("unknown").to_string();
+
+            Ok(SunTimesResponse {
+                sunrise,
+                sunset,
             })
         }
         Ok((response,)) => Err(format!("Non-200 response: {}", response.status)),
