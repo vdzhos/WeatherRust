@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use candid::{CandidType, Principal};
 
+//-----structs-----
 
 #[derive(Serialize, Deserialize, CandidType, Debug)]
 struct WeatherRequest {
@@ -80,6 +81,14 @@ struct WeatherStationsResponse {
     stations: Vec<StationInfo>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct WindInfoResponse {
+    wind_direction: String,
+    wind_power: String,
+}
+
+//-----end structs-----
+
 const API_TOKEN: &str = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
 const WEATHER_API_KEY: &str = "UXD6LQ27FMXMXZ4D5444KD6FV";
 const WEATHER_API_HOST: &str = "weather.visualcrossing.com";
@@ -97,7 +106,6 @@ fn build_http_request(url: String) -> CanisterHttpRequestArgument {
         transform: None,
     }
 }
-
 
 #[update]
 async fn weather_endpoint(request: WeatherRequest) -> String {
@@ -276,4 +284,79 @@ async fn get_weather_stations(location: &str, date: &str) -> Result<WeatherStati
         Ok((response,)) => Err(format!("Non-200 response: {}", response.status)),
         Err((code, message)) => Err(format!("Request failed: {:?}, {}", code, message)),
     }
+}
+
+//----------wind info------------
+
+#[update]
+async fn get_wind_info_endpoint(request: WeatherRequest) -> String {
+    if request.token != API_TOKEN {
+        return "Invalid API token.".to_string();
+    }
+
+    match get_wind_info(&request.location, &request.date).await {
+        Ok(response) => serde_json::to_string(&response).unwrap(),
+        Err(e) => format!("Error fetching wind info: {}", e),
+    }
+}
+
+async fn get_wind_info(location: &str, date: &str) -> Result<WindInfoResponse, String> {
+    let url = format!(
+        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}",
+        WEATHER_API_HOST, location, date, WEATHER_API_KEY
+    );
+
+    let request = build_http_request(url);
+
+    match http_request(request).await {
+        Ok((response,)) if response.status == 200 => {
+            let str_body = String::from_utf8(response.body)
+                .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+            let all_info: Value = serde_json::from_str(&str_body)
+                .map_err(|e| format!("Failed to parse JSON: {}", e))?;
+
+            let wind_dir_degrees = all_info["days"][0]["winddir"].as_f64().unwrap_or(0.0);
+
+            let wind_speed = all_info["days"][0]["windspeedmean"].as_f64()
+                .or_else(|| all_info["days"][0]["windspeed"].as_f64())
+                .unwrap_or(0.0);
+
+            let wind_direction = get_wind_direction_text(wind_dir_degrees);
+
+            let wind_power = get_wind_power_category(wind_speed);
+
+            let result = WindInfoResponse {
+                wind_direction,
+                wind_power,
+            };
+
+            Ok(result)
+        }
+        Ok((response,)) => Err(format!("Non-200 response: {}", response.status)),
+        Err((code, message)) => Err(format!("Request failed: {:?}, {}", code, message)),
+    }
+}
+
+fn get_wind_direction_text(degrees: f64) -> String {
+    let directions = [
+        "Northern", "Northeastern", "Eastern", "Southeastern",
+        "Southern", "Southwestern", "Western", "Northwestern"
+    ];
+
+    let normalized_degrees = (degrees % 360.0 + 360.0) % 360.0;
+
+    let index = ((normalized_degrees + 22.5) % 360.0 / 45.0).floor() as usize;
+
+    directions[index].to_string()
+}
+
+fn get_wind_power_category(speed_kph: f64) -> String {
+    match speed_kph {
+        s if s < 2.0 => "Windless",
+        s if s < 12.0 => "Light wind",
+        s if s < 29.0 => "Medium wind",
+        s if s < 75.0 => "Strong wind",
+        _ => "Hurricane wind",
+    }.to_string()
 }

@@ -47,3 +47,15 @@ dfx canister call WeatherRust get_weather_stations_endpoint '(
         date = "2020-11-10";
     }
 )'
+
+------------------------------------------------
+get_wind_info_endpoint
+------------------------------------------------
+dfx canister call WeatherRust get_wind_info_endpoint '(
+    record {
+        token = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
+        requester_name = "hlib";
+        location = "Kyiv";
+        date = "2023-05-01"
+    }
+)'
