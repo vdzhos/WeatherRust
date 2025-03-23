@@ -93,6 +93,12 @@ pub struct UvRecommendation {
     uvindex: f64,
 }
 
+#[derive(Debug, Serialize)]
+pub struct PrecipitationInfoResponse {
+    precipitation_mm: f64,
+    precipitation_type: String,
+}
+
 //-----end structs-----
 
 const API_TOKEN: &str = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
@@ -419,4 +425,50 @@ fn get_sunglasses_recommendation(uvindex: f64) -> String {
         uv if uv < 5.0 => "Sunglasses are recommended",
         _ => "Sunglasses are necessary",
     }.to_string()
+}
+
+#[update]
+async fn get_precipitation_info_endpoint(request: WeatherRequest) -> String {
+    if request.token != API_TOKEN {
+        return "Invalid API token.".to_string();
+    }
+
+    match get_precipitation_info(&request.location, &request.date).await {
+        Ok(response) => serde_json::to_string(&response).unwrap(),
+        Err(e) => format!("Error fetching precipitation info: {}", e),
+    }
+}
+
+async fn get_precipitation_info(location: &str, date: &str) -> Result<PrecipitationInfoResponse, String> {
+    let url = format!(
+        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}",
+        WEATHER_API_HOST, location, date, WEATHER_API_KEY
+    );
+
+    let request = build_http_request(url);
+
+    match http_request(request).await {
+        Ok((response,)) if response.status == 200 => {
+            let str_body = String::from_utf8(response.body)
+                .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+            let all_info: Value = serde_json::from_str(&str_body)
+                .map_err(|e| format!("Failed to parse JSON: {}", e))?;
+
+            let day = &all_info["days"][0];
+            let precipitation_mm = day["precip"].as_f64().unwrap_or(0.0);
+            let precipitation_type = day["preciptype"]
+                .get(0)
+                .and_then(|v| v.as_str())
+                .unwrap_or("none")
+                .to_string();
+
+            Ok(PrecipitationInfoResponse {
+                precipitation_mm,
+                precipitation_type,
+            })
+        }
+        Ok((response,)) => Err(format!("Non-200 response: {}", response.status)),
+        Err((code, message)) => Err(format!("Request failed: {:?}, {}", code, message)),
+    }
 }

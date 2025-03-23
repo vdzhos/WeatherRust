@@ -29,7 +29,7 @@ compare_weather_endpoint
 dfx canister call WeatherRust compare_weather_endpoint '(
     record {
         token = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
-        requester_name = "Your Name";
+        requester_name = "hlib";
         location1 = "Kyiv";
         location2 = "London";
         date = "2023-05-01";
@@ -69,5 +69,17 @@ dfx canister call WeatherRust get_uv_recommendation_endpoint '(
         requester_name = "hlib";
         location = "Kyiv";
         date = "2023-05-01"
+    }
+)'
+
+------------------------------------------------
+get_precipitation_info_endpoint
+------------------------------------------------
+dfx canister call WeatherRust get_precipitation_info_endpoint '(
+    record {
+        token = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
+        requester_name = "illia";
+        location = "Kyiv";
+        date = "2025-05-01"
     }
 )'
