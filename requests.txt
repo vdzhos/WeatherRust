@@ -35,3 +35,15 @@ dfx canister call WeatherRust compare_weather_endpoint '(
         date = "2023-05-01";
     }
 )'
+
+------------------------------------------------
+get_weather_stations_endpoint
+------------------------------------------------
+dfx canister call WeatherRust get_weather_stations_endpoint '(
+    record {
+        token = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
+        requester_name = "vdzhos";
+        location = "Kyiv";
+        date = "2020-11-10";
+    }
+)'
