@@ -1,0 +1,19 @@
+dfx canister call WeatherRust weather_endpoint '(
+    record {
+        token = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
+        requester_name = "vdzhos";
+        location = "Kyiv";
+        date = "2023-05-01"
+    }
+)'
+
+
+dfx canister call WeatherRust average_weather_on_range_endpoint '(
+    record {
+        token = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
+        requester_name = "vdzhos";
+        location = "London";
+        start_date = "2025-01-01";
+        end_date = "2025-01-07"
+    }
+)'
