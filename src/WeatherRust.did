@@ -1,6 +1,11 @@
 service : {
-    "weather_endpoint": (record { token: text; requester_name: text; location: text; date: text }) -> (text);
-    "average_weather_on_range_endpoint": (record { token: text; requester_name: text; location: text; start_date: text; end_date: text }) -> (text);
-    "compare_weather_endpoint": (record { token: text; requester_name: text; location1: text; location2: text; date: text }) -> (text);
-    "get_weather_stations_endpoint": (record { token: text; requester_name: text; location: text; date: text }) -> (text);
+  "weather_endpoint": (record { token: text; requester_name: text; location: text; date: text }) -> (text);
+  "average_weather_on_range_endpoint": (record { token: text; requester_name: text; location: text; start_date: text; end_date: text }) -> (text);
+  "compare_weather_endpoint": (record { token: text; requester_name: text; location1: text; location2: text; date: text }) -> (text);
+  "get_weather_stations_endpoint": (record { token: text; requester_name: text; location: text; date: text }) -> (text);
+  "get_wind_info_endpoint": (record { token: text; requester_name: text; location: text; date: text }) -> (text);
+  "get_uv_recommendation_endpoint": (record { token: text; requester_name: text; location: text; date: text }) -> (text);
+  "get_precipitation_info_endpoint": (record { token: text; requester_name: text; location: text; date: text }) -> (text);
+  "get_feels_like_temperature_endpoint": (record { token: text; requester_name: text; location: text; date: text }) -> (text);
+  "get_sun_times_endpoint": (record { token: text; requester_name: text; location: text; date: text }) -> (text);
 }
