@@ -2,11 +2,11 @@
 
 ## Overview
 
-The **WeatherRust** project is a decentralized application (DApp) built on the **Internet Computer Protocol (ICP)**. This project utilizes **Rust** for its backend implementation and provides a set of endpoints to access weather data via a weather API. The main objective of the WeatherRust project is to provide weather information in various formats and for different locations, offering a rich set of weather-related services to end-users.
+The **WeatherRust** project is a decentralized application (DApp) built on the **Internet Computer Protocol (ICP)**. This project utilizes **Rust** for its backend implementation and provides a set of endpoints to access weather data via a weather API ([visualcrossing API docs](https://www.visualcrossing.com/resources/documentation/weather-api/timeline-weather-api/)). The main objective of the WeatherRust project is to provide weather information in various formats and for different locations, offering a rich set of weather-related services to end-users.
 
 ## Functionality
 
-This project is implemented as a set of **canister** endpoints, each responsible for querying a different type of weather data from the external weather API (Visual Crossing Web Services). The canisters are called through **Candid UI**, which exposes each endpoint as a service that can be invoked with the appropriate request parameters.
+This project is implemented as a set of **canister** endpoints, each responsible for querying a different type of weather data from the external weather API. The canisters are called through **Candid UI**, which exposes each endpoint as a service that can be invoked with the appropriate request parameters.
 
 ### Features
 
@@ -85,7 +85,7 @@ The Candid UI is the interface through which users can interact with the caniste
    The backend is implemented using **Rust**, and the canisters are compiled to **WebAssembly (Wasm)**. The canisters are deployed on the **Internet Computer** (ICP). The canisters expose various endpoints to handle weather data requests.
 
 2. **HTTP Requests**:  
-   The canisters make HTTP requests to an external weather API (Visual Crossing Web Services) to fetch the necessary weather data. The data is then processed and formatted into a suitable response that is sent back to the requester.
+   The canisters make HTTP requests to an external weather API to fetch the necessary weather data. The data is then processed and formatted into a suitable response that is sent back to the requester.
 
 3. **Data Processing**:  
    The data returned from the API is parsed into structured formats using **serde** and **serde_json**. The weather data, once parsed, is serialized into the appropriate response format (e.g., `WeatherResponse`, `AverageWeatherResponse`, etc.).
