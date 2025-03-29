@@ -1,5 +1,6 @@
 use ic_cdk::api::management_canister::http_request::{
-    http_request, CanisterHttpRequestArgument, HttpHeader, HttpMethod,
+    http_request, CanisterHttpRequestArgument, HttpHeader, HttpMethod, HttpResponse, TransformArgs,
+    TransformContext,
 };
 use ic_cdk_macros::{query, update};
 use serde::{Deserialize, Serialize};
@@ -111,13 +112,24 @@ pub struct SunTimesResponse {
     sunset: String,
 }
 
+#[derive(Serialize, Deserialize)]
+struct Context {
+    bucket_start_time_index: usize,
+    closing_price_index: usize,
+}
+
 //-----end structs-----
 
 const API_TOKEN: &str = "3e2f4d6a5b8c9e1f1234abcd5678ef90";
-const WEATHER_API_KEY: &str = "UXD6LQ27FMXMXZ4D5444KD6FV";
-const WEATHER_API_HOST: &str = "weather.visualcrossing.com";
+const WEATHER_API_KEY: &str = "4WWQEDQX2PLN5W97DGKEDXAS3";
+const WEATHER_API_HOST: &str = "weather-gateway.weather-rust-gateway.workers.dev";
 
 fn build_http_request(url: String) -> CanisterHttpRequestArgument {
+    let context = Context {
+        bucket_start_time_index: 0,
+        closing_price_index: 4,
+    };
+
     CanisterHttpRequestArgument {
         url,
         method: HttpMethod::GET,
@@ -127,8 +139,55 @@ fn build_http_request(url: String) -> CanisterHttpRequestArgument {
         }],
         body: None,
         max_response_bytes: None,
-        transform: None,
+        transform: Some(TransformContext::new(transform, serde_json::to_vec(&context).unwrap())),
     }
+}
+
+#[query]
+fn transform(raw: TransformArgs) -> HttpResponse {
+
+    let headers = vec![
+        HttpHeader {
+            name: "Content-Security-Policy".to_string(),
+            value: "default-src 'self'".to_string(),
+        },
+        HttpHeader {
+            name: "Referrer-Policy".to_string(),
+            value: "strict-origin".to_string(),
+        },
+        HttpHeader {
+            name: "Permissions-Policy".to_string(),
+            value: "geolocation=(self)".to_string(),
+        },
+        HttpHeader {
+            name: "Strict-Transport-Security".to_string(),
+            value: "max-age=63072000".to_string(),
+        },
+        HttpHeader {
+            name: "X-Frame-Options".to_string(),
+            value: "DENY".to_string(),
+        },
+        HttpHeader {
+            name: "X-Content-Type-Options".to_string(),
+            value: "nosniff".to_string(),
+        },
+    ];
+
+
+    let mut res = HttpResponse {
+        status: raw.response.status.clone(),
+        body: raw.response.body.clone(),
+        headers,
+        ..Default::default()
+    };
+
+    if res.status == 200 {
+
+        res.body = raw.response.body;
+    } else {
+        ic_cdk::api::print(format!("Received an error from coinbase: err = {:?}", raw));
+    }
+    res
 }
 
 #[update]
@@ -145,7 +204,7 @@ async fn weather_endpoint(request: WeatherRequest) -> String {
 
 async fn get_weather(location: &str, date: &str) -> Result<WeatherResponse, String> {
     let url = format!(
-        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}",
+        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}&include=days",
         WEATHER_API_HOST, location, date, WEATHER_API_KEY
     );
 
@@ -187,7 +246,7 @@ async fn average_weather_on_range_endpoint(request: AverageWeatherOnRangeRequest
 
 async fn get_average_weather_on_range(location: &str, start_date: &str, end_date: &str) -> Result<AverageWeatherResponse, String> {
     let url = format!(
-        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}/{}?unitGroup=metric&key={}",
+        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}/{}?unitGroup=metric&key={}&include=days",
         WEATHER_API_HOST, location, start_date, end_date, WEATHER_API_KEY
     );
 
@@ -274,7 +333,7 @@ async fn get_weather_stations_endpoint(request: WeatherStationsRequest) -> Strin
 
 async fn get_weather_stations(location: &str, date: &str) -> Result<WeatherStationsResponse, String> {
     let url = format!(
-        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}",
+        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}&include=days",
         WEATHER_API_HOST, location, date, WEATHER_API_KEY
     );
 
@@ -326,7 +385,7 @@ async fn get_wind_info_endpoint(request: WeatherRequest) -> String {
 
 async fn get_wind_info(location: &str, date: &str) -> Result<WindInfoResponse, String> {
     let url = format!(
-        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}",
+        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}&include=days",
         WEATHER_API_HOST, location, date, WEATHER_API_KEY
     );
 
@@ -401,7 +460,7 @@ async fn get_uv_recommendation_endpoint(request: WeatherRequest) -> String {
 
 async fn get_uv_recommendation(location: &str, date: &str) -> Result<UvRecommendation, String> {
     let url = format!(
-        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}",
+        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}&include=days",
         WEATHER_API_HOST, location, date, WEATHER_API_KEY
     );
 
@@ -453,7 +512,7 @@ async fn get_precipitation_info_endpoint(request: WeatherRequest) -> String {
 
 async fn get_precipitation_info(location: &str, date: &str) -> Result<PrecipitationInfoResponse, String> {
     let url = format!(
-        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}",
+        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}&include=days",
         WEATHER_API_HOST, location, date, WEATHER_API_KEY
     );
 
@@ -499,7 +558,7 @@ async fn get_feels_like_temperature_endpoint(request: WeatherRequest) -> String 
 
 async fn get_feels_like_temperature(location: &str, date: &str) -> Result<FeelsLikeTemperatureResponse, String> {
     let url = format!(
-        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}",
+        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}&include=days",
         WEATHER_API_HOST, location, date, WEATHER_API_KEY
     );
 
@@ -541,7 +600,7 @@ async fn get_sun_times_endpoint(request: WeatherRequest) -> String {
 
 async fn get_sun_times(location: &str, date: &str) -> Result<SunTimesResponse, String> {
     let url = format!(
-        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}",
+        "https://{}/VisualCrossingWebServices/rest/services/timeline/{}/{}?unitGroup=metric&key={}&include=days",
         WEATHER_API_HOST, location, date, WEATHER_API_KEY
     );
 
